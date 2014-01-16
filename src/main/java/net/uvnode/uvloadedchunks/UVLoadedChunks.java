@@ -154,7 +154,7 @@ public final class UVLoadedChunks extends JavaPlugin implements Listener {
         double[] z = {(double)(chunk.getZ()*16), (double)((chunk.getZ()+1)*16)};
 
         // Create marker
-        String label = "";
+        String label = key;
         AreaMarker marker = _markerSet.createAreaMarker(key, label, true, chunk.getWorld().getName(), x, z, false);
         if(marker == null) {
             getLogger().info("Error adding area marker " + key);
