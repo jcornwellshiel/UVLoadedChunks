@@ -65,8 +65,8 @@ public final class UVLoadedChunks extends JavaPlugin implements Listener {
         
     }
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-
         if (cmd.getName().equalsIgnoreCase("uvloadedchunks")) {
+            reset();
             sender.sendMessage("There are " + _loadedChunks.size() + " chunks loaded.");
             return true;
         }
@@ -74,26 +74,24 @@ public final class UVLoadedChunks extends JavaPlugin implements Listener {
     }
 
     private String createChunkKey(Chunk chunk) {
-        return String.format("%s%d%d", chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+        return String.format("%s.%d.%d", chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
     }
     @EventHandler
     private void onChunkLoadEvent(ChunkLoadEvent event) {
         _loadedChunks.add(event.getChunk());
         createMarker(event.getChunk(), createChunkKey(event.getChunk()));
+        //getLogger().info("Loaded chunk at " + event.getChunk().getX() + ", " + event.getChunk().getZ());
     }
         
     @EventHandler
     private void onChunkUnloadEvent(ChunkUnloadEvent event) {
+        if (event.isCancelled()) return;
         _loadedChunks.remove(event.getChunk());
         deleteMarker(createChunkKey(event.getChunk()));
+        //getLogger().info("Unloaded chunk at " + event.getChunk().getX() + ", " + event.getChunk().getZ());
     }
 
     private void activate() {
-        for (World world : getServer().getWorlds()) {
-            for (Chunk chunk : world.getLoadedChunks()) {
-                _loadedChunks.add(chunk);
-            }
-        }
 
         try {
             // Load marker API
@@ -126,13 +124,21 @@ public final class UVLoadedChunks extends JavaPlugin implements Listener {
             return;
         }
 
-        // Step through villages and create initial markers.
-        for (Chunk chunk : _loadedChunks) {
-            createMarker(chunk, String.format("%s%d%d", createChunkKey(chunk)));
-        }
-
         // Start listening for events.
         getServer().getPluginManager().registerEvents(this, this);
+    }
+    private void reset() {
+        for (Chunk c : _loadedChunks) {
+            deleteMarker(createChunkKey(c));
+        }
+        _loadedChunks.clear();
+        
+        for(World world : getServer().getWorlds()) {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                _loadedChunks.add(chunk);
+                createMarker(chunk, createChunkKey(chunk));
+            }
+        }
     }
     private void deleteMarker(String key) {
         // Retrieve the marker
@@ -144,8 +150,8 @@ public final class UVLoadedChunks extends JavaPlugin implements Listener {
     }
     private void createMarker(Chunk chunk, String key) {
         
-        double[] x = {(double)(chunk.getX()*16), (double)(chunk.getX()*17)};
-        double[] z = {(double)(chunk.getZ()*16), (double)(chunk.getZ()*17)};
+        double[] x = {(double)(chunk.getX()*16), (double)((chunk.getX()+1)*16)};
+        double[] z = {(double)(chunk.getZ()*16), (double)((chunk.getZ()+1)*16)};
 
         // Create marker
         String label = "";
